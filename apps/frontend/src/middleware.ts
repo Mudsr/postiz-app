@@ -34,6 +34,8 @@ export async function middleware(request: NextRequest) {
   if (
     nextUrl.pathname.startsWith('/uploads/') ||
     nextUrl.pathname.startsWith('/p/') ||
+    nextUrl.pathname.startsWith('/terms-and-conditions') ||
+    nextUrl.pathname.startsWith('/privacy-policy') ||
     nextUrl.pathname.startsWith('/icons/')
   ) {
     return NextResponse.next({

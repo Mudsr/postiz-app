@@ -44,6 +44,7 @@ import { ChromeExtensionComponent } from '@gitroom/frontend/components/layout/ch
 import { LanguageComponent } from '@gitroom/frontend/components/layout/language.component';
 import { useT } from '@gitroom/react/translation/get.transation.service.client';
 import i18next from '@gitroom/react/translation/i18next';
+import { FooterComponent } from './footer.component';
 extend(utc);
 extend(weekOfYear);
 extend(isoWeek);
