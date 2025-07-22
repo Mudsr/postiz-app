@@ -1,8 +1,7 @@
 import Link from 'next/link';
-import { isGeneral } from '@gitroom/react/helpers/variable.context';
 
 export const FooterComponent = () => {
-  const companyName = isGeneral ? 'Postiz' : 'Gitroom';
+  const companyName = 'Kaziday';
   
   return (
     <footer className="border-t border-tableBorder mt-auto py-4">
