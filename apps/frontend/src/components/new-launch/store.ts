@@ -25,11 +25,15 @@ interface SelectedIntegrations {
 }
 
 interface StoreState {
+  editor: undefined | 'normal' | 'markdown' | 'html';
+  loaded: boolean;
   date: dayjs.Dayjs;
   postComment: PostComment;
+  dummy: boolean;
   repeater?: number;
   isCreateSet: boolean;
   totalChars: number;
+  activateExitButton: boolean;
   tags: { label: string; value: string }[];
   tab: 0 | 1;
   current: string;
@@ -114,9 +118,17 @@ interface StoreState {
     media: { id: string; path: string }[]
   ) => void;
   setPostComment: (postComment: PostComment) => void;
+  setActivateExitButton?: (activateExitButton: boolean) => void;
+  setDummy: (dummy: boolean) => void;
+  setEditor: (editor: 'normal' | 'markdown' | 'html') => void;
+  setLoaded?: (loaded: boolean) => void;
 }
 
 const initialState = {
+  editor: undefined as undefined,
+  loaded: true,
+  dummy: false,
+  activateExitButton: true,
   date: dayjs(),
   postComment: PostComment.ALL,
   tags: [] as { label: string; value: string }[],
@@ -148,13 +160,22 @@ export const useLaunchStore = create<StoreState>()((set) => ({
       );
 
       if (existing) {
+        const selectedList = state.selectedIntegrations.filter(
+          (s, index) => s.integration.id !== existing.integration.id
+        );
+
         return {
           ...(existing.integration.id === state.current
             ? { current: 'global' }
             : {}),
-          selectedIntegrations: state.selectedIntegrations.filter(
-            (s, index) => s.integration.id !== existing.integration.id
-          ),
+          loaded: false,
+          selectedIntegrations: selectedList,
+          ...(selectedList.length === 0
+            ? {
+                current: 'global',
+                editor: 'normal',
+              }
+            : {}),
         };
       }
 
@@ -497,5 +518,21 @@ export const useLaunchStore = create<StoreState>()((set) => ({
   setPostComment: (postComment: PostComment) =>
     set((state) => ({
       postComment,
+    })),
+  setActivateExitButton: (activateExitButton: boolean) =>
+    set((state) => ({
+      activateExitButton,
+    })),
+  setDummy: (dummy: boolean) =>
+    set((state) => ({
+      dummy,
+    })),
+  setEditor: (editor: 'normal' | 'markdown' | 'html') =>
+    set((state) => ({
+      editor,
+    })),
+  setLoaded: (loaded: boolean) =>
+    set((state) => ({
+      loaded,
     })),
 }));

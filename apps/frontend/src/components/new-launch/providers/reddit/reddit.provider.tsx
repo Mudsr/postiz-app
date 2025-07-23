@@ -1,7 +1,10 @@
 'use client';
 
 import { FC, useCallback } from 'react';
-import { PostComment, withProvider } from '@gitroom/frontend/components/new-launch/providers/high.order.provider';
+import {
+  PostComment,
+  withProvider,
+} from '@gitroom/frontend/components/new-launch/providers/high.order.provider';
 import { useIntegration } from '@gitroom/frontend/components/launches/helpers/use.integration';
 import { Subreddit } from '@gitroom/frontend/components/new-launch/providers/reddit/subreddit';
 import { useSettings } from '@gitroom/frontend/components/launches/helpers/use.values';
@@ -14,7 +17,6 @@ import {
 import clsx from 'clsx';
 import { useMediaDirectory } from '@gitroom/react/helpers/use.media.directory';
 import { deleteDialog } from '@gitroom/react/helpers/delete.dialog';
-import MDEditor from '@uiw/react-md-editor';
 import interClass from '@gitroom/react/helpers/inter.font';
 import Image from 'next/image';
 import { useT } from '@gitroom/react/translation/get.transation.service.client';
@@ -35,14 +37,12 @@ const RenderRedditComponent: FC<{
   switch (type) {
     case 'self':
       return (
-        <MDEditor.Markdown
+        <div
+          dangerouslySetInnerHTML={{ __html: firstPost?.content }}
           style={{
             whiteSpace: 'pre-wrap',
             fontSize: '14px',
           }}
-          skipHtml={true}
-          disallowedElements={['img']}
-          source={firstPost?.content}
         />
       );
     case 'link':
@@ -140,13 +140,11 @@ const RedditPreview: FC = (props) => {
                       <div className="text-[14px] font-[600]">
                         {integration?.name}
                       </div>
-                      <MDEditor.Markdown
+                      <div
+                        dangerouslySetInnerHTML={{ __html: p.text }}
                         style={{
                           whiteSpace: 'pre-wrap',
                         }}
-                        skipHtml={true}
-                        source={p.text}
-                        disallowedElements={['img']}
                       />
                     </div>
                   </div>
@@ -212,11 +210,12 @@ const RedditSettings: FC = () => {
     </>
   );
 };
-export default withProvider(
-  PostComment.POST,
-  RedditSettings,
-  RedditPreview,
-  RedditSettingsDto,
-  undefined,
-  10000
-);
+export default withProvider({
+  postComment: PostComment.POST,
+  minimumCharacters: [],
+  SettingsComponent: RedditSettings,
+  CustomPreviewComponent: RedditPreview,
+  dto: RedditSettingsDto,
+  checkValidity: undefined,
+  maximumCharacters: 10000,
+});

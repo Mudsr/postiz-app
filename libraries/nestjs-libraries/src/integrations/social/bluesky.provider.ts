@@ -24,6 +24,7 @@ import sharp from 'sharp';
 import { Plug } from '@gitroom/helpers/decorators/plug.decorator';
 import { timer } from '@gitroom/helpers/utils/timer';
 import axios from 'axios';
+import { stripHtmlValidation } from '@gitroom/helpers/utils/strip.html.validation';
 
 async function reduceImageBySize(url: string, maxSizeKB = 976) {
   try {
@@ -130,6 +131,7 @@ export class BlueskyProvider extends SocialAbstract implements SocialProvider {
   name = 'Bluesky';
   isBetweenSteps = false;
   scopes = ['write:statuses', 'profile', 'write:media'];
+  editor = 'normal' as const;
 
   async customFields() {
     return [
@@ -241,14 +243,14 @@ export class BlueskyProvider extends SocialAbstract implements SocialProvider {
     const cidUrl = [] as { cid: string; url: string; rev: string }[];
     for (const post of postDetails) {
       // Separate images and videos
-      const imageMedia = post.media?.filter((p) => p.url.indexOf('mp4') === -1) || [];
-      const videoMedia = post.media?.filter((p) => p.url.indexOf('mp4') !== -1) || [];
+      const imageMedia = post.media?.filter((p) => p.path.indexOf('mp4') === -1) || [];
+      const videoMedia = post.media?.filter((p) => p.path.indexOf('mp4') !== -1) || [];
 
       // Upload images
       const images = await Promise.all(
         imageMedia.map(async (p) => {
           return await agent.uploadBlob(
-            new Blob([await reduceImageBySize(p.url)])
+            new Blob([await reduceImageBySize(p.path)])
           );
         })
       );
@@ -256,7 +258,7 @@ export class BlueskyProvider extends SocialAbstract implements SocialProvider {
       // Upload videos (only one video per post is supported by Bluesky)
       let videoEmbed: AppBskyEmbedVideo.Main | null = null;
       if (videoMedia.length > 0) {
-        videoEmbed = await uploadVideo(agent, videoMedia[0].url);
+        videoEmbed = await uploadVideo(agent, videoMedia[0].path);
       }
 
       const rt = new RichText({
@@ -274,8 +276,8 @@ export class BlueskyProvider extends SocialAbstract implements SocialProvider {
         // If there are images but no video, use image embed
         embed = {
           $type: 'app.bsky.embed.images',
-          images: images.map((p) => ({
-            alt: 'picture',
+          images: images.map((p, index) => ({
+            alt: imageMedia?.[index]?.alt || '',
             image: p.data.blob,
           })),
         };
@@ -311,13 +313,13 @@ export class BlueskyProvider extends SocialAbstract implements SocialProvider {
 
     if (postDetails?.[0]?.settings?.active_thread_finisher) {
       const rt = new RichText({
-        text: postDetails?.[0]?.settings?.thread_finisher,
+        text: stripHtmlValidation('normal', postDetails?.[0]?.settings?.thread_finisher, true),
       });
 
       await rt.detectFacets(agent);
 
       await agent.post({
-        text: postDetails?.[0]?.settings?.thread_finisher,
+        text: stripHtmlValidation('normal', rt.text, true),
         facets: rt.facets,
         createdAt: new Date().toISOString(),
         embed: {
@@ -458,7 +460,7 @@ export class BlueskyProvider extends SocialAbstract implements SocialProvider {
     if (getThread.data.thread.post?.likeCount >= +fields.likesAmount) {
       await timer(2000);
       const rt = new RichText({
-        text: fields.post,
+        text: stripHtmlValidation('normal', fields.post, true),
       });
 
       await agent.post({

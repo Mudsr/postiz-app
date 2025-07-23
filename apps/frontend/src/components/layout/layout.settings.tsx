@@ -45,6 +45,8 @@ import { LanguageComponent } from '@gitroom/frontend/components/layout/language.
 import { useT } from '@gitroom/react/translation/get.transation.service.client';
 import i18next from '@gitroom/react/translation/i18next';
 import { FooterComponent } from './footer.component';
+import { MediaSettingsLayout } from '@gitroom/frontend/components/launches/helpers/media.settings.component';
+
 extend(utc);
 extend(weekOfYear);
 extend(isoWeek);
@@ -80,6 +82,7 @@ export const LayoutSettings = ({ children }: { children: ReactNode }) => {
           <ToolTip />
           <ShowMediaBoxModal />
           <ShowLinkedinCompany />
+          <MediaSettingsLayout />
           <Toaster />
           <ShowPostSelector />
           <NewSubscription />
@@ -159,8 +162,8 @@ export const LayoutSettings = ({ children }: { children: ReactNode }) => {
                     <div className="text-center mb-[20px] text-xl [@media(max-width:1024px)]:text-xl">
                       <h1 className="text-3xl [@media(max-width:1024px)]:text-xl">
                         {t(
-                          'join_1000_entrepreneurs_who_use_postiz',
-                          'Join 1000+ Entrepreneurs Who Use Postiz'
+                          'join_10000_entrepreneurs_who_use_postiz',
+                          'Join 10,000+ Entrepreneurs Who Use Postiz'
                         )}
                         <br />
                         {t(

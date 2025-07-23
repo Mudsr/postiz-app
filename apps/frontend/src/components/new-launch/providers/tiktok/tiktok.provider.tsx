@@ -8,7 +8,10 @@ import {
   useMemo,
   useState,
 } from 'react';
-import { PostComment, withProvider } from '@gitroom/frontend/components/new-launch/providers/high.order.provider';
+import {
+  PostComment,
+  withProvider,
+} from '@gitroom/frontend/components/new-launch/providers/high.order.provider';
 import { TikTokDto } from '@gitroom/nestjs-libraries/dtos/posts/providers-settings/tiktok.dto';
 import { useSettings } from '@gitroom/frontend/components/launches/helpers/use.values';
 import { Select } from '@gitroom/react/form/select';
@@ -16,6 +19,8 @@ import { useCustomProviderFunction } from '@gitroom/frontend/components/launches
 import { Checkbox } from '@gitroom/react/form/checkbox';
 import clsx from 'clsx';
 import { useT } from '@gitroom/react/translation/get.transation.service.client';
+import { useIntegration } from '@gitroom/frontend/components/launches/helpers/use.integration';
+import { Input } from '@gitroom/react/form/input';
 
 const CheckTikTokValidity: FC<{
   picture: string;
@@ -82,8 +87,13 @@ const CheckTikTokValidity: FC<{
 const TikTokSettings: FC<{
   values?: any;
 }> = (props) => {
-  const { watch, register, formState, control } = useSettings();
+  const { watch, register } = useSettings();
+  const { value } = useIntegration();
   const t = useT();
+
+  const isTitle = useMemo(() => {
+    return value?.[0].image.some((p) => p.path.indexOf('mp4') === -1);
+  }, [value]);
 
   const disclose = watch('disclose');
   const brand_organic_toggle = watch('brand_organic_toggle');
@@ -139,6 +149,9 @@ const TikTokSettings: FC<{
   return (
     <div className="flex flex-col">
       <CheckTikTokValidity picture={props?.values?.[0]?.image?.[0]?.path} />
+      {isTitle && (
+        <Input label="Title" {...register('title')} maxLength={90} />
+      )}
       <Select
         label={t('label_who_can_see_this_video', 'Who can see this video?')}
         hideErrors={true}
@@ -163,7 +176,6 @@ const TikTokSettings: FC<{
       </div>
       <Select
         label={t('label_content_posting_method', 'Content posting method')}
-        disabled={isUploadMode}
         {...register('content_posting_method', {
           value: 'DIRECT_POST',
         })}
@@ -201,6 +213,14 @@ const TikTokSettings: FC<{
       </div>
       <div className="flex gap-[40px]">
         <Checkbox
+          label={t('label_comments', 'Comments')}
+          variant="hollow"
+          disabled={isUploadMode}
+          {...register('comment', {
+            value: true,
+          })}
+        />
+        <Checkbox
           variant="hollow"
           label={t('label_duet', 'Duet')}
           disabled={isUploadMode}
@@ -213,14 +233,6 @@ const TikTokSettings: FC<{
           variant="hollow"
           disabled={isUploadMode}
           {...register('stitch', {
-            value: false,
-          })}
-        />
-        <Checkbox
-          label={t('label_comments', 'Comments')}
-          variant="hollow"
-          disabled={isUploadMode}
-          {...register('comment', {
             value: false,
           })}
         />
@@ -343,15 +355,16 @@ const TikTokSettings: FC<{
     </div>
   );
 };
-export default withProvider(
-  PostComment.COMMENT,
-  TikTokSettings,
-  undefined,
-  TikTokDto,
-  async (items) => {
+export default withProvider({
+  postComment: PostComment.COMMENT,
+  minimumCharacters: [],
+  SettingsComponent: TikTokSettings,
+  CustomPreviewComponent: undefined,
+  dto: TikTokDto,
+  checkValidity: async (items) => {
     const [firstItems] = items;
     if (items.length !== 1) {
-      return 'Tiktok items should be one';
+      return 'Should have one item';
     }
     if (firstItems.length === 0) {
       return 'No video / images selected';
@@ -369,5 +382,5 @@ export default withProvider(
     }
     return true;
   },
-  2000
-);
+  maximumCharacters: 2000,
+});

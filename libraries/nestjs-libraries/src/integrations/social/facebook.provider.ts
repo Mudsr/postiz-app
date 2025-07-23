@@ -8,6 +8,7 @@ import {
 import { makeId } from '@gitroom/nestjs-libraries/services/make.is';
 import dayjs from 'dayjs';
 import { SocialAbstract } from '@gitroom/nestjs-libraries/integrations/social.abstract';
+import { FacebookDto } from '@gitroom/nestjs-libraries/dtos/posts/providers-settings/facebook.dto';
 
 export class FacebookProvider extends SocialAbstract implements SocialProvider {
   identifier = 'facebook';
@@ -21,6 +22,127 @@ export class FacebookProvider extends SocialAbstract implements SocialProvider {
     'pages_read_engagement',
     'read_insights',
   ];
+  editor = 'normal' as const;
+
+  override handleErrors(body: string):
+    | {
+        type: 'refresh-token' | 'bad-body';
+        value: string;
+      }
+    | undefined {
+    // Access token validation errors - require re-authentication
+    if (body.indexOf('Error validating access token') > -1) {
+      return {
+        type: 'refresh-token' as const,
+        value: 'Please re-authenticate your Facebook account',
+      };
+    }
+
+    if (body.indexOf('490') > -1) {
+      return {
+        type: 'refresh-token' as const,
+        value: 'Access token expired, please re-authenticate',
+      };
+    }
+
+    if (body.indexOf('REVOKED_ACCESS_TOKEN') > -1) {
+      return {
+        type: 'refresh-token' as const,
+        value: 'Access token has been revoked, please re-authenticate',
+      };
+    }
+
+    if (body.indexOf('1366046') > -1) {
+      return {
+        type: 'bad-body' as const,
+        value: 'Photos should be smaller than 4 MB and saved as JPG, PNG',
+      };
+    }
+
+    if (body.indexOf('1390008') > -1) {
+      return {
+        type: 'bad-body' as const,
+        value: 'You are posting too fast, please slow down',
+      };
+    }
+
+    // Content policy violations
+    if (body.indexOf('1346003') > -1) {
+      return {
+        type: 'bad-body' as const,
+        value: 'Content flagged as abusive by Facebook',
+      };
+    }
+
+    if (body.indexOf('1404006') > -1) {
+      return {
+        type: 'bad-body' as const,
+        value: "We couldn't post your comment, A security check in facebook required to proceed.",
+      };
+    }
+
+    if (body.indexOf('1404102') > -1) {
+      return {
+        type: 'bad-body' as const,
+        value: 'Content violates Facebook Community Standards',
+      };
+    }
+
+    // Permission errors
+    if (body.indexOf('1404078') > -1) {
+      return {
+        type: 'refresh-token' as const,
+        value: 'Page publishing authorization required, please re-authenticate',
+      };
+    }
+
+    if (body.indexOf('1609008') > -1) {
+      return {
+        type: 'bad-body' as const,
+        value: 'Cannot post Facebook.com links',
+      };
+    }
+
+    // Parameter validation errors
+    if (body.indexOf('2061006') > -1) {
+      return {
+        type: 'bad-body' as const,
+        value: 'Invalid URL format in post content',
+      };
+    }
+
+    if (body.indexOf('1349125') > -1) {
+      return {
+        type: 'bad-body' as const,
+        value: 'Invalid content format',
+      };
+    }
+
+    if (body.indexOf('Name parameter too long') > -1) {
+      return {
+        type: 'bad-body' as const,
+        value: 'Post content is too long',
+      };
+    }
+
+    // Service errors - checking specific subcodes first
+    if (body.indexOf('1363047') > -1) {
+      return {
+        type: 'bad-body' as const,
+        value: 'Facebook service temporarily unavailable',
+      };
+    }
+
+    if (body.indexOf('1609010') > -1) {
+      return {
+        type: 'bad-body' as const,
+        value: 'Facebook service temporarily unavailable',
+      };
+    }
+
+    return undefined;
+  }
+
   async refreshToken(refresh_token: string): Promise<AuthTokenDetails> {
     return {
       refreshToken: '',
@@ -170,13 +292,13 @@ export class FacebookProvider extends SocialAbstract implements SocialProvider {
   async post(
     id: string,
     accessToken: string,
-    postDetails: PostDetails[]
+    postDetails: PostDetails<FacebookDto>[]
   ): Promise<PostResponse[]> {
     const [firstPost, ...comments] = postDetails;
 
     let finalId = '';
     let finalUrl = '';
-    if ((firstPost?.media?.[0]?.url?.indexOf('mp4') || -2) > -1) {
+    if ((firstPost?.media?.[0]?.path?.indexOf('mp4') || -2) > -1) {
       const {
         id: videoId,
         permalink_url,
@@ -190,7 +312,7 @@ export class FacebookProvider extends SocialAbstract implements SocialProvider {
               'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-              file_url: firstPost?.media?.[0]?.url!,
+              file_url: firstPost?.media?.[0]?.path!,
               description: firstPost.message,
               published: true,
             }),
@@ -215,7 +337,7 @@ export class FacebookProvider extends SocialAbstract implements SocialProvider {
                       'Content-Type': 'application/json',
                     },
                     body: JSON.stringify({
-                      url: media.url,
+                      url: media.path,
                       published: false,
                     }),
                   },
@@ -241,6 +363,9 @@ export class FacebookProvider extends SocialAbstract implements SocialProvider {
             },
             body: JSON.stringify({
               ...(uploadPhotos?.length ? { attached_media: uploadPhotos } : {}),
+              ...(firstPost?.settings?.url
+                ? { link: firstPost.settings.url }
+                : {}),
               message: firstPost.message,
               published: true,
             }),
@@ -266,7 +391,7 @@ export class FacebookProvider extends SocialAbstract implements SocialProvider {
             },
             body: JSON.stringify({
               ...(comment.media?.length
-                ? { attachment_url: comment.media[0].url }
+                ? { attachment_url: comment.media[0].path }
                 : {}),
               message: comment.message,
             }),
