@@ -51,7 +51,7 @@ jobs:
         run: |
           docker buildx build --platform linux/${{ matrix.arch }} \
             -f Dockerfile.dev \
-            -t ghcr.io/${{ github.repository_owner }}/postiz-app:${{ env.CONTAINERVER }}-${{ matrix.arch }} \
+            -t ghcr.io/mudsr/postiz-app:${{ env.CONTAINERVER }}-${{ matrix.arch }} \
             --build-arg NEXT_PUBLIC_VERSION=${{ env.NEXT_PUBLIC_VERSION }} \
             --provenance=false --sbom=false \
             --output "type=registry,name=ghcr.io/${{ github.repository_owner }}/postiz-app:${{ env.CONTAINERVER }}-${{ matrix.arch }}" .
